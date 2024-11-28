@@ -175,7 +175,7 @@ run () {
         (
             cd "${d}"
             apidiff -m -w "${out}/$(output_name "${d}")" .
-        )
+        ) &
     done
     wait
 }
