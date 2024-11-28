@@ -78,14 +78,21 @@ while getopts "r:t:b:" o; do
 done
 shift $((OPTIND - 1))
 
-# default from prow env if unset from args
-# https://docs.prow.k8s.io/docs/jobs/#job-environment-variables
-# TODO: handle batch PR testing
-
-if [[ -z "${target:-}" && -n "${PULL_PULL_SHA:-}" ]]; then
-    target="${PULL_PULL_SHA}"
+# Check specific directory or everything.
+targets=("$@")
+if [ ${#targets[@]} -eq 0 ]; then
+    shopt -s globstar
+    # Modules are discovered by looking for go.mod rather than asking go
+    # to ensure that modules that aren't part of the workspace and/or are
+    # not dependencies are checked too.
+    # . and staging are listed explicitly here to avoid _output
+    for module in ./go.mod ./staging/**/go.mod; do
+        module="${module%/go.mod}"
+        targets+=("$module")
+    done
 fi
-# target must be a something that git can resolve to a commit.
+
+# Must be a something that git can resolve to a commit.
 # "git rev-parse --verify" checks that and prints a detailed
 # error.
 if [[ -n "${target}" ]]; then
